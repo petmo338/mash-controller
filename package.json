@@ -1,0 +1,13 @@
+{
+  "name": "spitest",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "gpio": "^0.2.10",
+    "log4js": "^6.2.1",
+    "onoff": "^6.0.0",
+    "pi-spi": "^1.2.1"
+  }
+}
