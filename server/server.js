@@ -5,7 +5,7 @@ var log4js = require('log4js')
 var os = require('os')
 var logger = log4js.getLogger()
 
-logger.level = 'warning'
+logger.level = 'info'
 logger.debug("Some debug messages") 
 
 
@@ -194,10 +194,10 @@ app.get('/', function (req, res) {
   res.send(response)
 })
 
-app.post('/setPoint', function (req, res) {
+app.post('/setTempSetpoint', function (req, res) {
   logger.info(req.body)
   tempSP = parseFloat(req.body.tempSetpoint)
-  logger.info('POST: /setPoint' + tempSP)
+  logger.info('POST: /setTempSetpoint' + tempSP)
   if (tempSP != NaN) {
     tempSetpoint = tempSP
     response = {
@@ -209,10 +209,10 @@ app.post('/setPoint', function (req, res) {
   }
 })
 
-app.post('/power', function (req, res) {
+app.post('/setPowerSetpoint', function (req, res) {
   logger.info(req.body)
   tempPower = parseInt(req.body.power)
-  logger.info('POST: /power' + tempPower)
+  logger.info('POST: /setPowerSetpoint' + tempPower)
   if (tempPower != NaN) {
     power = tempPower
     response = {
