@@ -66,15 +66,15 @@ class gpio {
     // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '0')
   }
   get() {
-    return parseInt(fs.readFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '0'))
+    return parseInt(fs.readFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value'))
   }
 }
 
 const gpio1800 = new gpio()
 const gpio1200 = new gpio()
 
-gpio1800.export('18')
-gpio1200.export('17')
+gpio1800.export('2')
+gpio1200.export('3')
 
 //   function enableCooling() {
 //     logger.info('enable cooling')
@@ -103,26 +103,9 @@ const measureTimerId = setInterval(() => {
 
     }
   })
-  child_process.exec('cat /sys/class/gpio/gpio17/value', (error, stdout, stderr) => {
-    if (error) {
-      logger.error(`Failed to read gpio17, error: ${error}. Pulling the handbrake`)
-      safetySwitch = false
-      clearInterval(measureTimerId)
-    }
-    else {
-      gpio1200State = parseInt(stdout)
-    }
-  })
-  child_process.exec('cat /sys/class/gpio/gpio18/value', (error, stdout, stderr) => {
-    if (error) {
-      logger.error(`Failed to read gpio18, error: ${error}. Pulling the handbrake`)
-      safetySwitch = false
-      clearInterval(measureTimerId)
-    }
-    else {
-      gpio1800State = parseInt(stdout)
-    }
-  })
+  gpio1800State = gpio1800.get()
+  gpio1200State = gpio1200.get()
+  
 }, 1000)
 
 function controlPartialPower(pinHighPower, pinLowPower) {
@@ -229,5 +212,5 @@ const server = app.listen( 9000, () => logger.info( 'Express server started!' ) 
 process.on('exit', () => {
   gpio1800.unexport()
   gpio1200.unexport()
-  logger.warning('Process exiting. Shut off heaters')
+  logger.warn('Process exiting. Shut off heaters')
 })
