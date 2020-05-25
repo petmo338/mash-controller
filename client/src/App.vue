@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
+    <img alt="Vue logo" src="./assets/hopcat.jpg">
     <Monitor />
   </div>
 </template>
@@ -25,5 +25,6 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  padding: section-padding-large;
 }
 </style>

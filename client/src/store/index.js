@@ -6,7 +6,9 @@ import { string } from 'postcss-selector-parser'
 import axios from 'axios'
 
 Vue.use(Vuex)
-const API_HOST = '192.168.30.175'
+const API_HOST = 'http://192.168.30.175'
+const API_PORT = ':9000'
+const API_BASE = API_HOST + API_PORT
 const store = new Vuex.Store({
   state: {
     currentTemp: -1,
@@ -26,7 +28,7 @@ const store = new Vuex.Store({
       state.currentTemp = temp
     },
     setCurrentPower (state, power) {
-        state.currentPower = power
+        state.currentPower = power.element1800 * 1800 + power.element1200 * 1200
     },
     setElement1800 (state, onOff) {
       if (onOff === 1) {
@@ -53,15 +55,17 @@ const store = new Vuex.Store({
     }    
   },
   actions: {
-    setTempSetpoint (value) {
+    /* eslint-disable no-empty-pattern */
+    setTempSetpoint ({}, value) {
       updateController('setTempSetpoint', value)
     },
-    setPowerSetpoint (value) {
+    /* eslint-disable no-empty-pattern */
+    setPowerSetpoint ({}, value) {
       updateController('setPowerSetpoint', value)
     },
-    getAll ({ commit}) {
+    getAll ({ commit }) {
       // Make a request for a user with a given ID
-      axios.get('http://' + API_HOST + ':9000/')
+      axios.get(API_BASE)
       .then(function (response) {
         if (response.data.hostname) {
           commit('setHostname', response.data.hostname)
@@ -78,9 +82,13 @@ const store = new Vuex.Store({
         if (response.data.heatStatus) {
           commit('setElement1800', response.data.heatStatus.element1800)
           commit('setElement1200', response.data.heatStatus.element1200)
+          commit('setCurrentPower', response.data.heatStatus)
         }
         if (response.data.power) {
           commit('setPowerSetpoint', response.data.power)
+        }
+        if (response.data.timeUTC) {
+          commit('setTimeUTC', response.data.timeUTC)
         }
         
       //   {
@@ -125,15 +133,20 @@ async function updateController(action, value) {
   let data = undefined
   if (action === 'setTempSetpoint') {
     endpoint = '/setTempSetpoint'
-    data = { 'tempSetpoint': value}
+    data = { 'tempSetpoint': value }
   } else if (action === 'setPowerSetpoint') {
     endpoint = '/setPowerSetpoint'
-    data = { 'power': value}
+    data = { 'power': value }
   }
-  axios.post(endpoint, data)
+  console.log(API_BASE + endpoint)
+  console.log(data)
+  axios.post(API_BASE + endpoint, data)
   .then(function (response) {
     if (response.status >= 300) {
       console.log('Error: ' + response)
+    }
+    else {
+      console.log(response.data)
     }
   })
   .catch(function (error) {
