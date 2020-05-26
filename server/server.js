@@ -1,11 +1,12 @@
 const child_process = require('child_process')
 const express = require('express')
+const https = require('https')
 const fs = require('fs')
 var log4js = require('log4js')
 var os = require('os')
 var logger = log4js.getLogger()
 
-logger.level = 'info'
+logger.level = 'warning'
 logger.debug("Some debug messages") 
 
 
@@ -207,7 +208,15 @@ app.post('/setPowerSetpoint', function (req, res) {
   }
 })
 
-const server = app.listen( 9000, () => logger.info( 'Express server started!' ) )
+const httpsServer = https.createServer({
+  key: fs.readFileSync('../snakeoil.key'),
+  cert: fs.readFileSync('../snakeoil.cert')
+}, app)
+.listen(3000, function () {
+  console.log('Example app listening on port 3000! Go to https://localhost:3000/')
+})
+
+const httpServer = app.listen( 9000, () => logger.info( 'Express server started!' ) )
 
 process.on('exit', () => {
   gpio1800.unexport()
