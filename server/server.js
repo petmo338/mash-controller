@@ -30,11 +30,14 @@ const deviceNameSide = '28-01192e17f017'
 class DS18B20 {
   constructor(deviceName, deviceString) {
     this.deviceName = deviceName
-    this.currentTemp = -1.0
+    this.temp = -1.0
     this.deviceString = deviceString
   }
   get currentTemp() {
-    return this.currentTemp
+    return this.temp
+  }
+  set currentTemp(temp) {
+    this.temp = temp
   }
   measure() {
     child_process.exec('cat /sys/devices/w1_bus_master1/' + this.deviceName + '/w1_slave', (error, stdout, stderr) => {
@@ -44,7 +47,7 @@ class DS18B20 {
       }
       else {
         if (stdout.indexOf('YES') > 0) {
-          this.currentTemp = parseInt(stdout.slice(stdout.indexOf('t=') + 2)) / 1000
+          this.temp = parseInt(stdout.slice(stdout.indexOf('t=') + 2)) / 1000
           logger.info(this.deviceString + ': ' + this.currentTemp + 'C')
           safetySwitch = true
         }
@@ -123,9 +126,9 @@ async function measureForever() {
   while (true) {
     sensors = [tempSensorBottom, tempSensorBottomExtra, tempSensorSide]
     for (i = 0; i < sensors.length; i++) {
-      logger.info('Measure on device: ' + sensors[i].deviceString)
+      // logger.info('Measure on device: ' + sensors[i].deviceString)
       while (!doneFlag) {
-        logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
+        // logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
         await sleep(200)
       }
       doneFlag = false
