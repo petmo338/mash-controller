@@ -13,6 +13,7 @@ logger.debug("Some debug messages")
 let currentTempBottom = -1.0
 let tempSetpoint = 67.0
 let safetySwitch = true
+let doneFlag = true
 let power = 0.0
 let currentPowerPhase = 0.0
 let gpio1800State = 0
@@ -23,6 +24,39 @@ const LowPowerElemetRating = 1200.0
 const localHostName = os.hostname()
 
 const deviceNameBottom = '28-00000467ad4f'
+const deviceNameBottomExtra = '28-01192de7eabb'
+const deviceNameSide = '28-01192e17f017'
+
+class DS18B20 {
+  constructor(deviceName, deviceString) {
+    this.deviceName = deviceName
+    this.currentTemp = -1.0
+    this.deviceString = deviceString
+  }
+  get currentTemp() {
+    return this.currentTemp
+  }
+  measure() {
+    child_process.exec('cat /sys/devices/w1_bus_master1/' + this.deviceName + '/w1_slave', (error, stdout, stderr) => {
+      if (error) {
+        logger.error(`Failed to read temp, error: ${error}. Pulling the handbrake`)
+        safetySwitch = false
+      }
+      else {
+        if (stdout.indexOf('YES') > 0) {
+          this.currentTemp = parseInt(stdout.slice(stdout.indexOf('t=') + 2)) / 1000
+          logger.info(this.deviceString + ': ' + this.currentTemp + 'C')
+          safetySwitch = true
+        }
+        else {
+          safetySwitch = false
+          logger.error('CRC error from DS18B20, disable heating')
+        }
+      }
+      doneFlag = true
+    })
+  }
+}
 
 class gpio {
   _update(action, data) {
@@ -77,37 +111,30 @@ const gpio1200 = new gpio()
 gpio1800.export('2')
 gpio1200.export('3')
 
-//   function enableCooling() {
-//     logger.info('enable cooling')
-//     gpio115.set()
-//     gpio49.reset()
-//     heatStatus = 0
-//   }
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-const measureTimerId = setInterval(() => {
-  child_process.exec('cat /sys/devices/w1_bus_master1/' + deviceNameBottom + '/w1_slave', (error, stdout, stderr) => {
-    if (error) {
-      logger.error(`Failed to read temp, error: ${error}. Pulling the handbrake`)
-      safetySwitch = false
-      clearInterval(measureTimerId)
-    }
-    else {
-      if (stdout.indexOf('YES') > 0) {
-        currentTempBottom = parseInt(stdout.slice(stdout.indexOf('t=') + 2)) / 1000
-        logger.info('currentTempBottom: ' + currentTempBottom + 'C')
-        safetySwitch = true
-      }
-      else {
-        safetySwitch = false
-        logger.error('CRC error from DS18B20, disable heating')
-      }
+const tempSensorBottom = new DS18B20(deviceNameBottom, 'Temp Sensor Bottom')
+const tempSensorBottomExtra = new DS18B20(deviceNameBottomExtra, 'Temp Sensor Bottom Extra')
+const tempSensorSide = new DS18B20(deviceNameSide, 'Temp Sensor Side')
 
-    }
-  })
-  gpio1800State = gpio1800.get()
-  gpio1200State = gpio1200.get()
-  
-}, 1000)
+async function measureForever() {
+  while (true) {
+    sensors = [tempSensorBottom, tempSensorBottomExtra, tempSensorSide]
+    sensors.foreach(device => {
+      logger.info('Measure on device: ' + device.deviceString)
+      while (!doneFlag) {
+        logger.info('Measure on device: ' + device.deviceString + '. doneFlag' + doneFlag)
+        await sleep(200)
+      }
+      doneFlag = false
+      device.measure()
+    })  
+  }
+}
+
+measureForever()
 
 function controlPartialPower(pinHighPower, pinLowPower) {
   if (power > HighPowerElemetRating) {
@@ -134,7 +161,7 @@ function controlPartialPower(pinHighPower, pinLowPower) {
 }
 
 const controlTimerId = setInterval(() => {
-  if (currentTempBottom < tempSetpoint) {
+  if (tempSensorBottom.currentTemp < tempSetpoint) {
     if (safetySwitch) {
       controlPartialPower(gpio1800, gpio1200)
     } else {  // Shut down
@@ -170,7 +197,11 @@ app.get('/', function (req, res) {
     'hostname': localHostName,
     'timeUTC': new Date(new Date().toUTCString()),
     'tempSetpoint': tempSetpoint,
-    'currentTemp': { 'bottom': currentTempBottom },
+    'currentTemp': {
+      'bottom': tempSensorBottom.currentTemp,
+      'bottomExtra': tempSensorBottomExtra.currentTemp,
+      'side': tempSensorSide.currentTemp
+    },
     'heatStatus': { 'element1800': gpio1800State, 'element1200': gpio1200State },
     'power': power,
     'extra': 'blah'
