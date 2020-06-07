@@ -122,15 +122,18 @@ const tempSensorSide = new DS18B20(deviceNameSide, 'Temp Sensor Side')
 async function measureForever() {
   while (true) {
     sensors = [tempSensorBottom, tempSensorBottomExtra, tempSensorSide]
-    sensors.foreach(device => {
-      logger.info('Measure on device: ' + device.deviceString)
+    for (i = 0; i < sensors.length; i++) {
+      logger.info('Measure on device: ' + sensors[i].deviceString)
       while (!doneFlag) {
-        logger.info('Measure on device: ' + device.deviceString + '. doneFlag' + doneFlag)
+        logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
         await sleep(200)
       }
       doneFlag = false
-      device.measure()
-    })  
+      sensors[i].measure()
+    }
+    // }
+    // sensors.foreach(device => {
+    //   )  
   }
 }
 
