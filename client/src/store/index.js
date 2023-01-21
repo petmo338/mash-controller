@@ -6,12 +6,14 @@ import { string } from 'postcss-selector-parser'
 import axios from 'axios'
 
 Vue.use(Vuex)
-const API_HOST = 'http://192.168.30.175'
+const API_HOST = 'http://192.168.1.112'
 const API_PORT = ':9000'
 const API_BASE = API_HOST + API_PORT
 const store = new Vuex.Store({
   state: {
     currentTemp: -1,
+    currentTempExtra: -1,
+    currentTempSide: -1,
     tempSetpoint: 67,
     powerSetpoint: 0,
     currentPower: 0,
@@ -26,6 +28,12 @@ const store = new Vuex.Store({
     },
     setCurrentTemp (state, temp) {
       state.currentTemp = temp
+    },
+    setCurrentTempExtra (state, temp) {
+      state.currentTempExtra = temp
+    },
+    setCurrentTempSide (state, temp) {
+      state.currentTempSide = temp
     },
     setCurrentPower (state, power) {
         state.currentPower = power.element1800 * 1800 + power.element1200 * 1200
@@ -78,6 +86,8 @@ const store = new Vuex.Store({
         }
         if (response.data.currentTemp) {
           commit('setCurrentTemp', response.data.currentTemp.bottom)
+          commit('setCurrentTempExtra', response.data.currentTemp.bottomExtra)
+          commit('setCurrentTempSide', response.data.currentTemp.side)
         }
         if (response.data.heatStatus) {
           commit('setElement1800', response.data.heatStatus.element1800)
