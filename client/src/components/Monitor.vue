@@ -1,6 +1,7 @@
 <template>
   <div class="container is-fluid">
     <section>
+    <div class="box">
       <b-field :label="getSetpointString">
         <b-slider v-model="tempSetpoint" size="is-large" :min="20.0" :max="100.0" :step="0.5" :bigger-slider-focus="true" lazy>
           <template v-for="val in tempArray">
@@ -8,14 +9,17 @@
           </template>
         </b-slider>
       </b-field>
-      <b-field :label="getPowerString">
+    </div>
+    <div class="box">
+    <b-field :label="getPowerString">
         <b-slider v-model="powerSetpoint" size="is-large" :min="100" :max="3000"  :step="100" :bigger-slider-focus="true" lazy>
           <template v-for="val in powerArray">
             <b-slider-tick :value="val" :key="val"></b-slider-tick>
           </template>
         </b-slider>
       </b-field>
-      <p>Current temp = {{ currTemp }}</p>
+    </div>
+      <p>Current temp = {{ currTemp }}, Side = {{ currTempSide }}, Extra {{ currTempExtra }}</p>
       <p>Current power = {{ currPower }}</p>   
       <p>Temp setpoint = {{ tempSetpoint }}</p>
       <p>Max power setpoint = {{ powerSetpoint }}</p>
@@ -68,6 +72,12 @@ export default {
     },
     currTemp: function () {
       return this.$store.state.currentTemp
+    },
+    currTempSide: function () {
+      return this.$store.state.currentTempSide
+    },
+    currTempExtra: function () {
+      return this.$store.state.currentTempExtra
     },
     currPower: function () {
       return this.$store.state.currentPower
