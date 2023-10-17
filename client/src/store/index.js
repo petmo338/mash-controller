@@ -6,7 +6,7 @@ import { string } from 'postcss-selector-parser'
 import axios from 'axios'
 
 Vue.use(Vuex)
-const API_HOST = 'http://192.168.1.112'
+const API_HOST = 'http://192.168.10.203'
 const API_PORT = ':9000'
 const API_BASE = API_HOST + API_PORT
 const store = new Vuex.Store({

@@ -6,7 +6,7 @@ var log4js = require('log4js')
 var os = require('os')
 var logger = log4js.getLogger()
 
-logger.level = 'warning'
+logger.level = 'debug'
 logger.debug("Some debug messages") 
 
 
@@ -23,8 +23,8 @@ const HighPowerElemetRating = 1800.0
 const LowPowerElemetRating = 1200.0
 const localHostName = os.hostname()
 
-const deviceNameBottom = '28-00000467ad4f'
-const deviceNameBottomExtra = '28-01192de7eabb'
+// const deviceNameBottom = '28-00000467ad4f'
+const deviceNameBottom = '28-01192de7eabb'
 const deviceNameSide = '28-01192e17f017'
 
 class DS18B20 {
@@ -111,24 +111,24 @@ class gpio {
 const gpio1800 = new gpio()
 const gpio1200 = new gpio()
 
-gpio1800.export('2')
-gpio1200.export('3')
+gpio1800.export('76')
+gpio1200.export('133')
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 const tempSensorBottom = new DS18B20(deviceNameBottom, 'Temp Sensor Bottom')
-const tempSensorBottomExtra = new DS18B20(deviceNameBottomExtra, 'Temp Sensor Bottom Extra')
+// const tempSensorBottomExtra = new DS18B20(deviceNameBottomExtra, 'Temp Sensor Bottom Extra')
 const tempSensorSide = new DS18B20(deviceNameSide, 'Temp Sensor Side')
 
 async function measureForever() {
   while (true) {
-    sensors = [tempSensorBottom, tempSensorBottomExtra, tempSensorSide]
+    sensors = [tempSensorBottom, tempSensorSide]
     for (i = 0; i < sensors.length; i++) {
-      // logger.info('Measure on device: ' + sensors[i].deviceString)
+      logger.info('Measure on device: ' + sensors[i].deviceString)
       while (!doneFlag) {
-        // logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
+        logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
         await sleep(200)
       }
       doneFlag = false
@@ -205,10 +205,9 @@ app.get('/', function (req, res) {
     'tempSetpoint': tempSetpoint,
     'currentTemp': {
       'bottom': tempSensorBottom.currentTemp,
-      'bottomExtra': tempSensorBottomExtra.currentTemp,
       'side': tempSensorSide.currentTemp
     },
-    'heatStatus': { 'element1800': gpio1800State, 'element1200': gpio1200State },
+    'heatStatus': { 'element1800': gpio1800.get(), 'element1200': gpio1200.get() },
     'power': power,
     'extra': 'blah'
   }
@@ -245,14 +244,14 @@ app.post('/setPowerSetpoint', function (req, res) {
   }
 })
 
-const httpsServer = https.createServer({
+/* const httpsServer = https.createServer({
   key: fs.readFileSync('../snakeoil.key'),
   cert: fs.readFileSync('../snakeoil.cert')
 }, app)
 .listen(3000, function () {
   console.log('Example app listening on port 3000! Go to https://localhost:3000/')
 })
-
+*/
 const httpServer = app.listen( 9000, () => logger.info( 'Express server started!' ) )
 
 process.on('exit', () => {

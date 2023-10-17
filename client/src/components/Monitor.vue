@@ -43,11 +43,11 @@
 <script>
 let tempArray = []
 let powerArray = []
-for (let i = 0; i < 160; i++) {
-  tempArray[i] = (i + 40) * 0.5
+for (let i = 0; i < 180; i++) {
+  tempArray[i] = (i + 20) * 0.5
 }
-for (let i = 0; i <= 29; i++) {
-  powerArray[i] = (i + 1) * 100
+for (let i = 0; i <= 30; i++) {
+  powerArray[i] = i * 100
 }
 // console.log(powerArray)
 export default {
