@@ -1,12 +1,13 @@
+require('dotenv').config()
 const child_process = require('child_process')
 const express = require('express')
-const https = require('https')
 const fs = require('fs')
 var log4js = require('log4js')
 var os = require('os')
 var logger = log4js.getLogger()
+const {InfluxDB, Point, HttpError} = require('@influxdata/influxdb-client')
 
-logger.level = 'debug'
+logger.level = 'error'
 logger.debug("Some debug messages") 
 
 
@@ -32,6 +33,7 @@ class DS18B20 {
     this.deviceName = deviceName
     this.temp = -1.0
     this.deviceString = deviceString
+    this.doneFlag = true
   }
   get currentTemp() {
     return this.temp
@@ -40,6 +42,7 @@ class DS18B20 {
     this.temp = temp
   }
   measure() {
+    this.doneFlag = false
     child_process.exec('cat /sys/devices/w1_bus_master1/' + this.deviceName + '/w1_slave', (error, stdout, stderr) => {
       if (error) {
         logger.error(`Failed to read temp, error: ${error}. Pulling the handbrake`)
@@ -56,7 +59,7 @@ class DS18B20 {
           logger.error('CRC error from DS18B20, disable heating')
         }
       }
-      doneFlag = true
+      this.doneFlag = true
     })
   }
 }
@@ -85,23 +88,16 @@ class gpio {
     this._update('export', undefined)
     this._update('direction', 'out')
     this._update('value', '0')
-    // fs.writeFileSync('/sys/class/gpio/export', this.pinNr)
-    // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/direction', 'out')
-    // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '0')
   }
   unexport() {
     this._update('direction', 'in')
     this._update('unexport', undefined)
-    // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '0')
-    // fs.writeFileSync('/sys/class/gpio/unexport', this.pinNr)
   }
   set() {
     this._update('value', '1')
-    // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '1')
   }
   unset() {
     this._update('value', '0')
-    // fs.writeFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value', '0')
   }
   get() {
     return parseInt(fs.readFileSync('/sys/class/gpio/gpio' + this.pinNr + '/value'))
@@ -127,16 +123,12 @@ async function measureForever() {
     sensors = [tempSensorBottom, tempSensorSide]
     for (i = 0; i < sensors.length; i++) {
       logger.info('Measure on device: ' + sensors[i].deviceString)
-      while (!doneFlag) {
+      while (!sensors[i].doneFlag) {
         logger.info('Measure on device: ' + sensors[i].deviceString + '. doneFlag' + doneFlag)
         await sleep(200)
       }
-      doneFlag = false
       sensors[i].measure()
     }
-    // }
-    // sensors.foreach(device => {
-    //   )  
   }
 }
 
@@ -167,6 +159,7 @@ function controlPartialPower(pinHighPower, pinLowPower) {
 }
 
 const controlTimerId = setInterval(() => {
+    logger.info('controlTimerId')
   if (tempSensorBottom.currentTemp < tempSetpoint) {
     if (safetySwitch) {
       controlPartialPower(gpio1800, gpio1200)
@@ -184,6 +177,22 @@ const controlTimerId = setInterval(() => {
     currentPowerPhase = 0
   }
 }, 500)
+
+const writeApi = new InfluxDB({url: process.env.URL, token: process.env.TOKEN}).getWriteApi('primary', process.env.BUCKET, 'ms')
+// setup default tags for all writes through this API
+writeApi.useDefaultTags({location: localHostName})
+
+
+const influxReportData = setInterval(() => {
+    logger.info('InfluxReportData')
+    const point1 = new Point('temperature')
+    .floatField('currentTempBottom', tempSensorBottom.currentTemp)
+    .floatField('currentTempSide', tempSensorSide.currentTemp)
+    .intField('heatStatus1800', gpio1800.get())
+    .intField('heatStatus1200', gpio1200.get())    
+    .intField('powerSetpoint', power)
+    writeApi.writePoint(point1)
+}, 5000)
 
 const app = express()
 
@@ -244,14 +253,6 @@ app.post('/setPowerSetpoint', function (req, res) {
   }
 })
 
-/* const httpsServer = https.createServer({
-  key: fs.readFileSync('../snakeoil.key'),
-  cert: fs.readFileSync('../snakeoil.cert')
-}, app)
-.listen(3000, function () {
-  console.log('Example app listening on port 3000! Go to https://localhost:3000/')
-})
-*/
 const httpServer = app.listen( 9000, () => logger.info( 'Express server started!' ) )
 
 process.on('exit', () => {
