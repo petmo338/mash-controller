@@ -6,6 +6,7 @@ var log4js = require('log4js')
 var os = require('os')
 var logger = log4js.getLogger()
 const { InfluxDB, Point, HttpError } = require('@influxdata/influxdb-client')
+const Controller = require('./controller')
 
 logger.level = 'error'
 logger.debug("Some debug messages")
@@ -23,10 +24,14 @@ const maxPowerPhase = 12.0
 const HighPowerElemetRating = 1800.0
 const LowPowerElemetRating = 1200.0
 const localHostName = os.hostname()
+const CONTROL_INTERVAL_MS = 1000
 
 const deviceNameGrain = '28-00000da6def7'
 const deviceNameBottom = '28-01192de7eabb'
 const deviceNameSide = '28-01192e17f017'
+
+let PID = new Controller(40.0, 0.01, 0.01, CONTROL_INTERVAL_MS/1000.0)
+PID.setTarget(tempSetpoint)
 
 class DS18B20 {
     constructor (deviceName, deviceString) {
@@ -179,8 +184,10 @@ function controlPartialPower (pinHighPower, pinLowPower) {
 }
 
 const controlTimerId = setInterval(() => {
-    logger.info('controlTimerId')
-    if (tempSensorBottom.currentTemp < tempSetpoint) {
+    power = PID.update(tempSensorGrain.currentTemp)
+    logger.info('PID output: ' + power)
+
+    if (tempSensorBottom.currentTemp < 102) {
         if (safetySwitch) {
             controlPartialPower(gpio1800, gpio1200)
         } else {  // Shut down
@@ -196,7 +203,7 @@ const controlTimerId = setInterval(() => {
     if (currentPowerPhase >= maxPowerPhase) {
         currentPowerPhase = 0
     }
-}, 500)
+}, CONTROL_INTERVAL_MS)
 
 const writeApi = new InfluxDB({ url: process.env.URL, token: process.env.TOKEN }).getWriteApi('primary', process.env.BUCKET, 'ms')
 // setup default tags for all writes through this API
@@ -212,6 +219,10 @@ const influxReportData = setInterval(() => {
         .intField('heatStatus1800', gpio1800.get())
         .intField('heatStatus1200', gpio1200.get())
         .intField('powerSetpoint', power)
+        .floatField('tempSetpoint', tempSetpoint)
+        .floatField('p_part', (tempSetpoint - tempSensorGrain.currentTemp) * PID.k_p)
+        .floatField('i_part', PID.sumError * PID.k_i)
+        .floatField('d_part', ((tempSetpoint - tempSensorGrain.currentTemp) - PID.lastError) * PID.k_d)
     writeApi.writePoint(point1)
 }, 1000)
 
@@ -250,6 +261,7 @@ app.post('/setTempSetpoint', function (req, res) {
     logger.info('POST: /setTempSetpoint' + tempSP)
     if (tempSP != NaN) {
         tempSetpoint = tempSP
+        PID.setTarget(tempSetpoint)
         response = {
             'tempSetpoint': tempSetpoint
         }
@@ -264,7 +276,7 @@ app.post('/setPowerSetpoint', function (req, res) {
     tempPower = parseInt(req.body.power)
     logger.info('POST: /setPowerSetpoint' + tempPower)
     if (tempPower != NaN) {
-        power = tempPower
+        PID.o_max = tempPower
         response = {
             'power': power
         }
