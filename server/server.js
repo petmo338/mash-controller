@@ -7,7 +7,7 @@ var os = require('os')
 var logger = log4js.getLogger()
 const { InfluxDB, Point, HttpError } = require('@influxdata/influxdb-client')
 
-logger.level = 'info'
+logger.level = 'error'
 logger.debug("Some debug messages")
 
 
