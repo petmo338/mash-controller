@@ -245,11 +245,13 @@ app.get('/', function (req, res) {
         'timeUTC': new Date(new Date().toUTCString()),
         'tempSetpoint': tempSetpoint,
         'currentTemp': {
-            'bottom': tempSensorBottom.currentTemp,
-            'side': tempSensorSide.currentTemp
+            'bottom': tempSensorGrain.currentTemp,
+            'side': tempSensorSide.currentTemp,
+            'exrta': tempSensorBottom.currentTemp
         },
         'heatStatus': { 'element1800': gpio1800.get(), 'element1200': gpio1200.get() },
         'power': power,
+        'maxPower': PID.o_max,
         'extra': 'blah'
     }
     res.send(response)
