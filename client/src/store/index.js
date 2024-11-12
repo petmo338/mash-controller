@@ -14,14 +14,14 @@ const store = new Vuex.Store({
     currentTemp: -1,
     currentTempExtra: -1,
     currentTempSide: -1,
-    tempSetpoint: 67,
+    tempSetpoint: 65,
     powerSetpoint: 0,
     currentPower: 0,
     avgPower: 0,
     element1800: 'Off',
     element1200: 'Off',
     timeUTC: undefined,
-    hostname: ''
+    hostname: 'DISCONNECTED'
   },
   mutations: {
     setTempSetpoint (state, temp) {
@@ -128,6 +128,7 @@ const store = new Vuex.Store({
       })
       .catch(function (error) {
         // handle error
+	commit('setHostname', 'DICONNETED')
         console.log(error)
       })
       .then(function () {
