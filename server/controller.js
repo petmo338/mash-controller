@@ -1,6 +1,6 @@
 'use strict'
-var log4js = require('log4js')
-var logger = log4js.getLogger()
+const log4js = require('log4js')
+const logger = log4js.getLogger()
 logger.level = 'info'
 logger.debug('Some debug messages')
 
@@ -11,7 +11,7 @@ class Controller {
   constructor (k_p, k_i, k_d, dt) {
     let i_max
     if (typeof k_p === 'object') {
-      let options = k_p
+      const options = k_p
       k_p = options.k_p
       k_i = options.k_i
       k_d = options.k_d
@@ -51,7 +51,7 @@ class Controller {
     // Calculate dt
     let dt = this.dt
     if (!dt) {
-      let currentTime = Date.now()
+      const currentTime = Date.now()
       if (this.lastTime === 0) {
         // First time update() is called
         dt = 0
@@ -64,14 +64,19 @@ class Controller {
       dt = 1
     }
 
-    let error = this.target - this.currentValue
-    this.sumError = this.sumError + error * dt
+    const error = this.target - this.currentValue
+    if (Math.abs(error) < 10.0) {
+      this.sumError = this.sumError + error * dt
+    } else {
+      this.sumError = 0
+    }
+
     if (this.i_max > 0 && Math.abs(this.sumError) > this.i_max) {
-      let sumSign = this.sumError > 0 ? 1 : -1
+      const sumSign = this.sumError > 0 ? 1 : -1
       this.sumError = sumSign * this.i_max
     }
 
-    let dError = (error - this.lastError) / dt
+    const dError = (error - this.lastError) / dt
     this.lastError = error
     // Limit output
     return Math.max(
