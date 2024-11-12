@@ -22,7 +22,7 @@
       <p>Current temp = {{ currTemp }}, Side = {{ currTempSide }}, Extra {{ currTempExtra }}</p>
       <p>Current power = {{ currPower }}</p>   
       <p>Temp setpoint = {{ tempSetpoint }}</p>
-      <p>Max power setpoint = {{ powerSetpoint }}</p>
+      <p>Avg output power = {{ avgPower }}</p>
       <p>Element 1800 = {{ element1800 }}</p>
       <p>Element 1200 = {{ element1200 }}</p>
       <p>Time = {{ currentTime }}</p>     
@@ -81,6 +81,9 @@ export default {
     },
     currPower: function () {
       return this.$store.state.currentPower
+    },
+    avgPower: function () {
+      return this.$store.state.avgPower
     },
     element1800: function () {
       return this.$store.state.element1800

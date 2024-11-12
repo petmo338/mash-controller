@@ -6,7 +6,7 @@ import { string } from 'postcss-selector-parser'
 import axios from 'axios'
 
 Vue.use(Vuex)
-const API_HOST = 'http://192.168.10.203'
+const API_HOST = 'http://192.168.10.204'
 const API_PORT = ':9000'
 const API_BASE = API_HOST + API_PORT
 const store = new Vuex.Store({
@@ -17,6 +17,7 @@ const store = new Vuex.Store({
     tempSetpoint: 67,
     powerSetpoint: 0,
     currentPower: 0,
+    avgPower: 0,
     element1800: 'Off',
     element1200: 'Off',
     timeUTC: undefined,
@@ -37,6 +38,9 @@ const store = new Vuex.Store({
     },
     setCurrentPower (state, power) {
         state.currentPower = power.element1800 * 1800 + power.element1200 * 1200
+    },
+    setAvgPower (state, power) {
+        state.avgPower = power
     },
     setElement1800 (state, onOff) {
       if (onOff === 1) {
@@ -86,7 +90,7 @@ const store = new Vuex.Store({
         }
         if (response.data.currentTemp) {
           commit('setCurrentTemp', response.data.currentTemp.bottom)
-          commit('setCurrentTempExtra', response.data.currentTemp.bottomExtra)
+          commit('setCurrentTempExtra', response.data.currentTemp.extra)
           commit('setCurrentTempSide', response.data.currentTemp.side)
         }
         if (response.data.heatStatus) {
@@ -94,8 +98,11 @@ const store = new Vuex.Store({
           commit('setElement1200', response.data.heatStatus.element1200)
           commit('setCurrentPower', response.data.heatStatus)
         }
+        if (response.data.maxPower) {
+          commit('setPowerSetpoint', response.data.maxPower)
+        }
         if (response.data.power) {
-          commit('setPowerSetpoint', response.data.power)
+          commit('setAvgPower', response.data.power)
         }
         if (response.data.timeUTC) {
           commit('setTimeUTC', response.data.timeUTC)
